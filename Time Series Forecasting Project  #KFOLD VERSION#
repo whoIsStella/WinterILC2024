@@ -17,7 +17,7 @@ from sklearn.model_selection import KFold #train_test_split#load data
 # from scipy.signal import butter, lfilter
 # from braindecode.datautil import create_from_mne_raw
 
-# Load your data into an MNE Raw object
+# Load MNE Raw object
 # raw = mne.io.read_raw_edf(file_path, preload=True)
 # raw.filter(0.5, 50) 
 
