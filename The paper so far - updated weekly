@@ -1,0 +1,37 @@
+
+Week 1
+This research aims to systematically compare and evaluate the capabilities of Long Short-Term Memory (LSTM) 
+networks and AutoRegressive Moving Average/AutoRegressive Integrated Moving Average (ARMA/ARIMA) models in 
+forecasting and data analysis. By analyzing various datasets and application scenarios, this study seeks to 
+elucidate the strengths, limitations, and practical applicability of these advanced statistical and deep learning techniques, 
+providing insights into their efficiency, accuracy, and suitability for different types of time series data.
+I will be collecting my datasets from across the internet as well as creating my own. During the first week 
+of this project, I have followed various tutorials and reading to help get a better understanding on how to 
+properly implement these models. I spent most of my time reading and watching tutorials while reading and 
+re reading my code and its output.
+The output shows the Root Mean Squared Error (RMSE) for both the training and test datasets.
+RMSE is a common metric used to evaluate the performance of regression models. 
+It measures the average magnitude of the model's prediction error. It is a barometer for error, 
+and it tells you how close the model's predictions are to the actual values. It's particularly useful in the context 
+of research comparing LSTM networks and ARMA/ARIMA models for time series forecasting. 
+Week 2
+Here's a deeper dive into RMSE and its comparison with other common metrics like MAE, MSE, and MAPE. 
+RMSE is the square root of the mean/average of the square of all errors found. The error is 
+calculated as the difference between the actual values and the predicted values. Mathematically, 
+it's represented as RMSE = sqrt(mean((actual - predicted)²)).
+RMSE gives a higher weight to large errors and should be more useful when large errors are 
+particularly undesirable. The scale of the RMSE is the same as the original data, making it somewhat 
+interpretable. However, it's sensitive to outliers. In time series forecasting, where sudden changes 
+might be significant, RMSE can help identify if the model is handling these changes well, or if it's 
+being overly influenced by a few large errors. MAE is the average of the absolute differences between 
+the predicted values and actual values. It's represented as MAE = mean(|actual - predicted|). 
+Unlike RMSE, MAE does not square the errors, it treats all errors linearly and is not as sensitive to 
+large errors as RMSE, it is easier to understand because it directly averages the absolute errors, 
+but it does not penalize large errors as heavily as RMSE. MSE is the mean/average of the squares 
+of the errors. It's represented as MSE = mean((actual - predicted)²) and is like RMSE but doesn’t have 
+the same scale as the original data since it squares the errors and gives more weight to larger outliers. 
+MAPE is the mean/average of the absolute percentage differences between the predicted and actual values. 
+It's represented as MAPE = mean(|(actual - predicted) / actual|) * 100%. MAPE expresses accuracy as a 
+percentage relative to the actual values. MAPE is useful when you want to interpret the error in terms
+of the relative size of the error to the actual value but can be misleading if dealing with values close 
+to zero and is not appropriate for datasets where the actual value can be zero.
