@@ -1,0 +1,148 @@
+This code provides a comprehensive approach to forecasting EEG data using LSTM networks 
+within a K-Fold cross-validation framework. It begins by importing necessary libraries, 
+loading EEG data from a CSV file, and preprocessing it, including timestamp conversion 
+and normalization using MinMaxScaler. The data is then structured into sequences suitable 
+for LSTM training. A key aspect of the script is the implementation of a K-Fold cross-validation 
+to robustly evaluate the LSTM model, which consists of two LSTM layers followed by a Dense 
+output layer, compiled with the MAE loss function. For each fold, the model is trained, 
+predictions are made on both training and test sets, and performance is evaluated using 
+RMSE and MAE metrics. The results, including the original series and model predictions,
+are visualized in plots, and performance metrics are printed, providing valuable insights 
+into the model's efficacy in forecasting EEG data.
+
+
+import pandas as pd
+import numpy as np
+import math
+import mne
+import matplotlib.pyplot as plt
+from keras.models import Sequential
+from keras.layers import LSTM, Dense, RepeatVector, TimeDistributed #Input
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import KFold #train_test_split#load data
+# from scipy.signal import butter, lfilter
+# from scipy.signal import butter, lfilter
+# from braindecode.datautil import create_from_mne_raw
+
+
+#if reading from edf / fif
+# Load your data into an MNE Raw object
+#raw = mne.io.read_raw_edf(file_path, preload=True)
+# raw.filter(0.5, 50)
+#raw.filter(30, raw.info['sfreq']/2.0) 
+
+
+
+file_path = r'C:\Users\hallo\OneDrive\Documents\mindMonitor_2023-10-31-updated.csv'
+df = pd.read_csv(file_path)#Data preparation/preprocessing
+df.dropna(how='all', inplace=True)
+
+
+
+# Convert timestamp string to Unix timestamp
+df['TimeStamp'] = pd.to_datetime(df['TimeStamp'].str.lstrip('\\'), format='%Y-%m-%d %H:%M:%S.%f')
+df['TimeStamp'] = (df['TimeStamp'] - pd.Timestamp("1970-01-01")) // pd.Timedelta('1s')
+
+# # Select columns for analysis (assuming they are numeric)
+series = df.iloc[:, 0:36]
+
+# # Initialize/apply MinMaxScaler
+scaler = MinMaxScaler(feature_range=(0, 1))
+series_scaled = scaler.fit_transform(series)
+
+# # Create dataset for LSTM
+def create_dataset(series, time_step):
+    X, y = [], []
+    for i in range(len(series)-time_step-1):
+        a = series[i:(i+time_step), :]
+        X.append(a)
+        y.append(series[i + time_step, 0])
+    return np.array(X), np.array(y)
+
+time_step = 100
+X, y = create_dataset(series_scaled, time_step)
+
+#KFOLD VERSION#
+
+# Kfold cross validation
+kf = KFold(n_splits=5, shuffle=True, random_state=0)
+
+fold_no = 1
+for train, test in kf.split(X, y):
+    scaler.fit(X[train].reshape(-1, X.shape[2]))
+    X_train_fold = scaler.transform(X[train].reshape(-1, X.shape[2])).reshape(-1, time_step, X.shape[2])
+    X_test_fold = scaler.transform(X[test].reshape(-1, X.shape[2])).reshape(-1, time_step, X.shape[2])
+    
+    #reshape input data
+    # X_train_fold = np.expand_dims(X_train_fold, axis=2)
+    # X_test_fold = np.expand_dims(X_test_fold, axis=2)
+    #check the shape of the array
+    print(X_train_fold.shape)
+    #if the 3rd dimension is 1, then squeeze it
+    if X_train_fold.shape[2] == 1:
+        X_train_fold = np.squeeze(X_train_fold, axis=2)
+    
+    print(X_test_fold)
+    if X_test_fold.shape[2] == 1:
+        X_test_fold = np.squeeze(X_test_fold, axis=2)
+    
+    y_train_fold = y[train]
+    y_test_fold = y[test]
+
+    # Build LSTM model
+    model = Sequential()
+    model.add(LSTM(50, activation='relu', input_shape=(time_step, X_train_fold.shape[2]), return_sequences=True))
+    model.add(LSTM(30, activation='relu', return_sequences=False))
+    
+    model.add(Dense(1))
+   
+    # model.compile(optimizer='adam', loss='mean_squared_error')
+    model.compile(optimizer='adam', loss='mae')
+
+    # Fit model
+    print(f'Training for fold {fold_no} ...')
+    model.fit(X_train_fold, y_train_fold, epochs=100, batch_size=64, verbose=1)
+
+    # Predictions
+    train_predict_fold = model.predict(X_train_fold)
+    test_predict_fold = model.predict(X_test_fold)
+    
+
+    dummy_data_train = np.zeros((train_predict_fold.shape[0], series.shape[1] - 1))
+    train_predict_combined = np.hstack((train_predict_fold, dummy_data_train))
+
+    dummy_data_test = np.zeros((test_predict_fold.shape[0], series.shape[1] - 1))
+    test_predict_combined = np.hstack((test_predict_fold, dummy_data_test))
+
+    # Inverting predictions to original scale for RMSE calculation
+    train_predict_fold = scaler.inverse_transform(train_predict_combined)[:, 0]
+    test_predict_fold = scaler.inverse_transform(test_predict_combined)[:, 0]
+
+    # Calculate RMSE
+    train_rmse_fold = math.sqrt(mean_squared_error(y_train_fold, train_predict_fold))
+    test_rmse_fold = math.sqrt(mean_squared_error(y_test_fold, test_predict_fold))
+    
+    #calculate MAE
+    train_mae = np.mean(np.abs(y_train_fold - train_predict_fold))
+    test_mae = np.mean(np.abs(y_test_fold - test_predict_fold))
+    
+    
+    # Plotting
+train_predict = model.predict(X_train_fold)
+test_predict = model.predict(X_test_fold)
+
+plt.figure(figsize=(12, 6))
+plt.plot(scaler.inverse_transform(series_scaled)[:, 0], label='Original Series')
+plt.plot(np.arange(time_step, len(train_predict) + time_step), train_predict[:, 0], label='Training Predictions')
+plt.plot(np.arange(len(train_predict) + (2 * time_step) + 1, len(train_predict) + (2 * time_step) + len(test_predict) + 1), test_predict[:, 0], label='Test Predictions')
+plt.legend()
+plt.show()
+
+# Print RMSE scores for the current fold
+print(f'Train RMSE for fold {fold_no}: {train_rmse_fold}')
+print(f'Test RMSE for fold {fold_no}: {test_rmse_fold}')
+print(f'Train MAE for fold {fold_no}: {train_mae}')
+print(f'Test MAE for fold {fold_no}: {test_mae}')
+    
+fold_no += 2
