@@ -1,5 +1,7 @@
 # WinterILC2024
 Week 1 Forecasting Progress: Test predictions are way off, I'm currently using one dataset with two variations. One that has been imputed using sklearn and one that has not. Tommorow I am supposed to get better equitment and hopefully better data. 
+1/24/24 *Update* 
+I got the BioPac and a lab so now I can collect more traing data!
 Current scores for TTS version
 
 Sklearn interpolated
@@ -20,3 +22,8 @@ Current scores for kfold version
 
 Train RMSE for fold 1: 0.010480387110425413
 Test RMSE for fold 1: 0.0112218624495148
+
+Week 3
+Current version has 2 LSTM layers, 1 dense layer. I added another fold, fold_no += 2, to reduce bias but this may
+cause more variance in predictions.
+
