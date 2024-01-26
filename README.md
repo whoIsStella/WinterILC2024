@@ -27,3 +27,7 @@ Week 3
 Current version has 2 LSTM layers, 1 dense layer. I added another fold, fold_no += 2, to reduce bias but this may
 cause more variance in predictions.
 
+Train RMSE for fold 1: 0.01706381091021187
+Test RMSE for fold 1: 0.015961710094759635
+Train MAE for fold 1: 0.014537892334713256
+Test MAE for fold 1: 0.013587817456856143
