@@ -1,0 +1,138 @@
+V/ARIMA - Still very much under construction
+
+# from _typeshed import DataclassInstance
+from matplotlib import pyplot as plt
+import mne 
+import tensorflow as tf
+import numpy as np
+import pandas as pd
+import pyedflib
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.model_selection import train_test_split
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.api import VAR
+from pandas import read_csv
+
+
+def read_edf(file_path):
+    f = pyedflib.EdfReader(file_path)
+    n = f.signals_in_file
+    signal_labels = f.getSignalLabels()
+    sigbufs = np.zeros((n, f.getNSamples()[0]))
+    for i in np.arange(n):
+        sigbufs[i, :] = f.readSignal(i)
+    f._close()
+    return sigbufs, signal_labels
+
+
+def read_fif(file_path):
+    raw = mne.io.read_raw_fif(file_path, preload=True)
+    return raw.get_data(), raw.ch_names
+
+
+
+file_path = r'C:\Users\hallo\OneDrive\Documents\mindMonitor_2023-10-31-updated.csv'
+df = pd.read_csv(file_path)#Data preparation/preprocessing
+df.dropna(how='all', inplace=True)
+
+data = pd.read_csv(file_path)
+
+data['TimeStamp'] = pd.to_datetime(data['datetime'])
+data['TimeStamp'] = data['TimeStamp'].map(TimeStamp.toordinal)
+
+# Convert timestamp string to Unix timestamp
+df['TimeStamp'] = pd.to_datetime(df['TimeStamp'].str.lstrip('\\'), format='%Y-%m-%d %H:%M:%S.%f')
+df['TimeStamp'] = (df['TimeStamp'] - pd.Timestamp("1970-01-01")) // pd.Timedelta('1s')
+
+
+# # Select columns for analysis (assuming they are numeric)
+series = df.iloc[:, 0:36]
+
+# # Initialize/apply MinMaxScaler
+scaler = MinMaxScaler(feature_range=(0, 1))
+series_scaled = scaler.fit_transform(series)
+
+
+
+def preprocessing_data(data):
+    scaler = StandardScaler()
+    data = scaler.fit_transform(data)
+    return data
+
+
+def genorate_sequence(data, window_size, step):
+    sequences = [] 
+    for i in range(0, len(data) - window_size, step):
+        sequences.append((data[:, i:i+window_size], data[:, i+window_size]))
+    return np.array(sequences)
+
+p = 2
+
+def build_model(data):
+    model = VAR(data) # order=(p, d, q) where p=AR order, d=degree of differencing, q=MA order
+    model_fit = model.fit(maxlags=p)
+        
+    return model_fit
+
+def train_eeg_model(file_path, file_type, window_size=100, step=1, epochs=10, batch_size=32):
+    if file_type == 'edf':
+        data = read_edf(file_path)
+    elif file_type == 'fif':
+        data = read_fif(file_path)
+    else: #csv
+        data = read_csv(file_path)
+        
+    data = preprocessing_data(data)
+    model_fit = build_model(data)
+
+    sequences = genorate_sequence(data, window_size, step)
+    X, y = sequences[:, 0, :], sequences[:, 1, :]
+    X = X.reshape(X.shape[0], X.shape[2], X.shape[1])  #reshape for LSTM
+    
+    #train test split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    
+    model_fit, yhat = build_model(input_shape=(X.shape[1], X.shape[2]))
+    model_fit.fit(X_train, y_train, epochs=epochs, batch_size=batch_size, validation_data=(X_test, y_test))
+
+
+
+def train_eeg_model(file_path, file_type, window_size=100, step=1, epochs=10, batch_size=32):
+    if file_type == 'edf':
+        data = read_edf(file_path)
+    elif file_type == 'fif':
+        data = read_fif(file_path)
+    else: #csv
+        data = read_csv(file_path)
+        
+    data = preprocessing_data(data)
+    model_fit = build_model(data)
+    
+    sequences = genorate_sequence(data, window_size, step)
+    X, y = sequences[:, 0, :], sequences[:, 1, :]
+    X = X.reshape(X.shape[0], X.shape[2], X.shape[1])  #reshape for LSTM
+    
+    #train test split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    
+    model_fit, yhat = build_model(input_shape=(X.shape[1], X.shape[2]))
+    model_fit.fit(X_train, y_train, epochs=epochs, batch_size=batch_size, validation_data=(X_test, y_test))
+
+train_eeg_model(file_path, read_csv, read_edf, read_fif)  # Call the train_eeg_model function
+
+forcast_horizon = 10
+
+forcast = model_fit.forecast(y=data.values[-p:], steps=forcast_horizon)
+
+plt.figure(figsize=(12, 6))
+for i in range(data.shape[0]):
+    plt.plot(data.index, data.values[:, i], label=data.columns[i])
+    for i in range(data.shape[1]):  # Iterate over EEG channels (variables)
+        plt.plot(data.index[-p:] + pd.DateOffset(seconds=i), data.values[-p:, i], label=f'Channel {i+1}', linestyle='--')
+        plt.plot(data.index[-1] + pd.DateOffset(seconds=i), forecast[:, i], label=f'Forecast Channel {i+1}')
+
+plt.xlabel('Time')
+plt.ylabel('EEG Value')
+plt.legend()
+plt.title('VARIMA Forecast for EEG Data')
+plt.show()
