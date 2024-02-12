@@ -11,7 +11,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.model_selection import train_test_split
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.api import VAR
-from pandas import read_csv
+from pandas import Timestamp, read_csv
 
 
 def read_edf(file_path):
@@ -36,19 +36,30 @@ df = pd.read_csv(file_path)#Data preparation/preprocessing
 df.dropna(how='all', inplace=True)
 
 data = pd.read_csv(file_path)
+data['TimeStamp'] = pd.to_datetime(data['TimeStamp'])
 
-data['TimeStamp'] = pd.to_datetime(data['datetime'])
-data['TimeStamp'] = data['TimeStamp'].map(TimeStamp.toordinal)
+# Print the DataFrame to the console
+print(data)
+
 
 # Convert timestamp string to Unix timestamp
-df['TimeStamp'] = pd.to_datetime(df['TimeStamp'].str.lstrip('\\'), format='%Y-%m-%d %H:%M:%S.%f')
+df['TimeStamp'] = pd.to_datetime(df['TimeStamp'])#.str.lstrip('\\'), format='%Y-%m-%d %H:%M:%S.%f')
 df['TimeStamp'] = (df['TimeStamp'] - pd.Timestamp("1970-01-01")) // pd.Timedelta('1s')
 
 
-# # Select columns for analysis (assuming they are numeric)
+if 'datetime' in df.columns:
+    df['TimeStamp'] = pd.to_datetime(df['datetime'])
+else:
+    print("'datetime' column not found in DataFrame")
+
+
+# Remove the unnecessary return statement
+# return df
+
+# Select columns for analysis (assuming they are numeric)
 series = df.iloc[:, 0:36]
 
-# # Initialize/apply MinMaxScaler
+# Initialize/apply MinMaxScaler
 scaler = MinMaxScaler(feature_range=(0, 1))
 series_scaled = scaler.fit_transform(series)
 
@@ -118,6 +129,10 @@ def train_eeg_model(file_path, file_type, window_size=100, step=1, epochs=10, ba
     model_fit, yhat = build_model(input_shape=(X.shape[1], X.shape[2]))
     model_fit.fit(X_train, y_train, epochs=epochs, batch_size=batch_size, validation_data=(X_test, y_test))
 
+data = data = preprocessing_data(data)
+model_fit = build_model(data)
+# Define the variable "data" here
+
 train_eeg_model(file_path, read_csv, read_edf, read_fif)  # Call the train_eeg_model function
 
 forcast_horizon = 10
@@ -136,3 +151,38 @@ plt.ylabel('EEG Value')
 plt.legend()
 plt.title('VARIMA Forecast for EEG Data')
 plt.show()
+
+
+
+# def train_eeg_model(file_path, file_type, window_size=100, step=1, epochs=10, batch_size=32):
+#     if file_type == 'edf':
+#         data = read_edf(file_path)
+#     elif file_type == 'fif':
+#         data = read_fif(file_path)
+#     else: #csv
+#         data = read_csv(file_path)
+        
+#     data = preprocessing_data(data)
+#     model_fit = build_model(data)
+    
+#     sequences = genorate_sequence(data, window_size, step)
+#     X, y = sequences[:, 0, :], sequences[:, 1, :]
+#     X = X.reshape(X.shape[0], X.shape[2], X.shape[1])  #reshape for LSTM
+    
+#     #train test split
+#     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    
+#     model_fit, yhat = build_model(input_shape=(X.shape[1], X.shape[2]))
+#     model_fit.fit(X_train, y_train, epochs=epochs, batch_size=batch_size, validation_data=(X_test, y_test))
+    
+#     return model_fit
+
+# file_path = r'C:\Users\hallo\OneDrive\Documents\mindMonitor_2023-10-31-updated.csv'
+# file_type = 'csv'
+# trained_model = train_eeg_model(file_path, file_type)
+
+# file_path = r"C:\Users\hallo\mindMonitor_2023-10-31--20-11-02_4625240158191494507\mindMonitor_2023-10-31--20-11-02_4625240158191494507_eeg.fif"
+# file_type = 'fif'
+# trained_model = train_eeg_model(file_path, file_type)
+
+# print(df.columns)
