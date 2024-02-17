@@ -31,6 +31,7 @@ def impute_with_arima(series, order=(1, 1, 1)):
     return imputed_series 
 
 other_numeric_cols = df.select_dtypes(include=[np.number]).columns
+time_series_cols = []  # Define the variable "time_series_cols" here
 
 def ghost_value_impute(df, time_series_cols, other_numeric_cols):
     for col in time_series_cols:
@@ -38,16 +39,21 @@ def ghost_value_impute(df, time_series_cols, other_numeric_cols):
             df[col] = impute_with_arima(df[col])
             
 df_numeric = df[other_numeric_cols]
-imputer_rf = IterativeImputer(estimator=RandomForestRegressor(n_estimators=10), max_iter=10, random_state=0)
-                              
-df_imputed_rf = pd.DataFrame(imputer_rf.fit_transform(df_numeric), columns=other_numeric_cols)
-for col in other_numeric_cols:
-    df[col] = df_imputed_rf[col]
-    
-return df
+df = ghost_value_impute(df, time_series_cols, other_numeric_cols)
 
-time_series_cols = ['your_time_series_column_names']
-other_numeric_cols = ['your_other_numeric_column_names']
+print("\nTransformed DataFrame:")
+print(df.head())
+
+negative_values_exist = (df[df.select_dtypes(include=[np.number]) < 0].any()).any()
+print("\nAre there any negative values left? ", "Yes" if negative_values_exist else "No")
+
+# Display information about NaN values after transformation
+print("\nNaN values after transformations and imputation:")
+print(df.isna().sum())
+
+# Save the transformed DataFrame to a new CSV file
+df.to_csv(r'C:\Users\hallo\OneDrive\Documents\mindMonitor_2023-10-31-amended.csv', index=False)
+print("\nAmended data saved to 'mindMonitor_2023-10-31-amended.csv'")
 
 
 # Replace negative values with their absolute values in numeric columns
