@@ -1,0 +1,57 @@
+# Purpose: Clean csv file by removing negative values and NaNs, and imputing missing values.
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import IterativeImputer
+from sklearn.ensemble import RandomForestRegressor
+import pandas as pd
+import numpy as np
+
+# Load the data
+df = pd.read_csv(r'C:\Users\hallo\AppData\Local\Temp\9077107b-3e54-4dfc-b5c9-31103d1b664c_mindMonitor_2024-02-15--14-03-19_7224054213750081783.zip.64c\mindMonitor_2024-02-15--14-03-19_7224054213750081783.csv')
+
+# Display initial DataFrame state
+print("Initial DataFrame:")
+print(df.head())
+
+
+print("\nNaN values in DataFrame:")
+print(df.isna().sum())
+
+rf_model = RandomForestRegressor(n_estimators=100, random_state=0)
+
+imputer = IterativeImputer(estimator=rf_model, random_state=0)
+
+
+columns_to_impute = ['Delta_TP9', 'Delta_AF7', 'Delta_AF8', 'Delta_TP10', 
+                    'Theta_TP9', 'Theta_AF7', 'Theta_AF8', 'Theta_TP10', 
+                    'Alpha_TP9', 'Alpha_AF7', 'Alpha_AF8', 'Alpha_TP10', 
+                    'Beta_TP9', 'Beta_AF7', 'Beta_AF8', 'Beta_TP10', 'Gamma_TP9',
+                    'Gamma_AF7', 'Gamma_AF8', 'Gamma_TP10']
+
+#impute selected columns
+df[columns_to_impute] = imputer.fit_transform(df[columns_to_impute])
+
+#convert back to dataframe  
+df_imputed = pd.DataFrame(df, columns=df.columns)
+
+#columns to drop
+guarbage_col = ['RAW_TP9','RAW_AF7','RAW_AF8','RAW_TP10','AUX_RIGHT',
+                   'Accelerometer_X','Accelerometer_Y','Accelerometer_Z',
+                   'Gyro_X','Gyro_Y','Gyro_Z','HeadBandOn','HSI_TP9',
+                   'HSI_AF7','HSI_AF8','HSI_TP10','Battery','Elements']
+
+df = df.drop(columns=guarbage_col)
+
+#apply imputation and transformation to the rest of the columns
+df[columns_to_impute] = imputer.fit_transform(df[columns_to_impute])
+
+#convert to dataframe
+df_imputed = pd.DataFrame(df, columns=df.columns)
+
+
+# Display information about NaN values after transformation
+print("\nNaN values after transformations and imputation:")
+print(df.isna().sum())
+
+# Save the transformed DataFrame to a new CSV file
+df.to_csv(r'C:\Users\hallo\OneDrive\Documents\mindMonitor_2024-2-23-miced2.csv', index=False)
+print("\nAmended data saved to 'mindMonitor_2024-2-22-miced2.csv'")
