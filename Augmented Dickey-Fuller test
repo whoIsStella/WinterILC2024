@@ -1,0 +1,29 @@
+Augmented Dickey-Fuller test to see if my data is or is not stationary.
+I did this because I am having issues with the ARIMA model and one way 
+to determine weather or not ARIMA is the correct option is to write a ADF test.
+A lot of my scores have a p-value of below 0.05, suggesting evidence against a
+null hypothesis but that does not seem right to me. EEG signals are typically non-stationary
+due to the complex cortical activity in different regions of the brain.
+Something is wrong and I am having issues coming to a conclusion. 
+import pandas as pd
+from pandas import Series
+from statsmodels.tsa.stattools import adfuller
+
+file_path = r'file_path'
+df = pd.read_csv(file_path)#Data preparation/preprocessing
+df.dropna(how='all', inplace=True)
+
+# Convert timestamp string to Unix timestamp
+df['TimeStamp'] = pd.to_datetime(df['TimeStamp'], format='%Y-%m-%d %H:%M:%S.%f')
+df['TimeStamp'] = (df['TimeStamp'] - pd.Timestamp("1970-01-01")) // pd.Timedelta('1s')
+
+column_names = ['Delta_TP9', 'Delta_AF7', 'Delta_AF8', 'Delta_TP10', 'Theta_TP9', 
+                'Theta_AF7', 'Theta_AF8', 'Theta_TP10', 'Alpha_TP9', 'Alpha_AF7', 
+                'Alpha_AF8', 'Alpha_TP10', 'Beta_TP9', 'Beta_AF7', 'Beta_AF8', 
+                'Beta_TP10', 'Gamma_TP9', 'Gamma_AF7', 'Gamma_AF8', 'Gamma_TP10']
+
+for column in column_names:
+    result = adfuller(df[column])
+
+print('ADF Statistic: %f' % result[0])
+print('p-value: %f' % result[1])
