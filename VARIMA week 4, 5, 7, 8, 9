@@ -1,0 +1,72 @@
+ARIMA - Still very much under construction
+updated weekly
+
+import pandas as pd
+from statsmodels.tsa.arima.model import ARIMA
+from sklearn.metrics import mean_squared_error
+from math import sqrt
+import matplotlib.pyplot as plt
+
+# EEG data must be in a 1D array or Series
+data = pd.read_csv(r'C:\Users\hallo\OneDrive\Desktop\Egg\mindMonitor_2024-2-23-miced5.csv')
+data['TimeStamp'] = pd.to_datetime(data['TimeStamp'])
+data.set_index('TimeStamp', inplace=True)
+
+thing1 = data['Delta_AF7']
+thing1 = thing1.loc[~thing1.index.duplicated(keep='first')]
+thing1 = thing1.resample('S').interpolate()
+thing1 = thing1.reset_index(drop=True)
+
+eeg_data = thing1
+
+# Split the data into training and test sets
+train_size = int(len(eeg_data) * 0.8)
+train, test = eeg_data[0:train_size], eeg_data[train_size:len(eeg_data)]
+
+print(len(eeg_data))
+print(len(train))
+
+# Function to evaluate combinations of p, d and q values for an ARIMA model
+def evaluate_arima_model(order):
+    try:
+        model = ARIMA(train, order=order)
+        model_fit = model.fit()
+        print(model_fit.summary())
+        predictions = model_fit.predict(start=len(train), end=len(train)+len(test)-1, typ='levels')
+        rmse = sqrt(mean_squared_error(test, predictions))
+        print(f"RMSE: {rmse: .2f}")
+        return rmse, predictions
+    except Exception as e:
+        print(f"Error: {e}")
+        return float('inf'), None
+
+def evaluate_models(p_values, d_values, q_values):
+    best_score, best_order = float('inf'), None
+    best_predictions = None
+    for p in p_values:
+        for d in d_values:
+            for q in q_values:
+                order = (p,d,q)
+                rmse, predictions = evaluate_arima_model(order)
+                if rmse < best_score:
+                    best_score, best_order = rmse, order
+                    best_predictions = predictions
+                print('ARIMA%s RMSE=%.3f' % (order,rmse))
+    print('Best ARIMA%s RMSE=%.3f' % (best_order, best_score))
+    return best_order, best_score, best_predictions
+
+# Evaluate parameters
+best_order, best_score, best_predictions = evaluate_models([1, 2, 3], [0, 1, 2], [0, 1, 2])
+
+# Plot actual vs predicted values
+if best_predictions is not None:
+    plt.figure(figsize=(10, 6))
+    plt.plot(test.index, test, label='Actual')
+    plt.plot(test.index, best_predictions, label='Predicted', color='red')
+    plt.xlabel('Timestamp')
+    plt.ylabel('Delta_AF7')
+    plt.title('ARIMA Forecasting for Delta_AF7')
+    plt.legend()
+    plt.show()
+else:
+    print("No predictions to plot")
