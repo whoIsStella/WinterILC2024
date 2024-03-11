@@ -1,8 +1,4 @@
-#still very much under construction#
-#rmse score seems to improve with a switch from TTS to Kfold#
-#Train RMSE for fold 1: 0.010480387110425413#
-#Test RMSE for fold 1: 0.0112218624495148#
-#This is better but it's still a terrible score haha#
+
 #updated again#
 import pandas as pd
 import numpy as np
