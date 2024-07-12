@@ -40,11 +40,11 @@ df.dropna(how='all', inplace=True)
 
 
 
-# Convert timestamp string to Unix timestamp
+# Convert to Unix timestamp
 df['TimeStamp'] = pd.to_datetime(df['TimeStamp'].str.lstrip('\\'), format='%Y-%m-%d %H:%M:%S.%f')
 df['TimeStamp'] = (df['TimeStamp'] - pd.Timestamp("1970-01-01")) // pd.Timedelta('1s')
 
-# # Select columns for analysis (assuming they are numeric)
+# # Select columns for analysis
 series = df.iloc[:, 0:36]
 
 # # Initialize/apply MinMaxScaler
