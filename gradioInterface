@@ -1,0 +1,53 @@
+import gradio as gr
+import pandas as pd
+from IIIII import load_data, preprocess_data, train_model, visualize_results, generate_report
+
+def upload_data(file):
+    df = load_data(file)
+    return "Data Loaded Successfully!"
+
+def set_parameters(time_step, scaler_type):
+    preprocess_data(time_step, scaler_type)
+    return "Parameters Set!"
+
+def initiate_training():
+    train_model()
+    return "Model Trained Successfully!"
+
+def view_results():
+    fig = visualize_results()
+    return fig
+
+def generate_report_func():
+    report = generate_report()
+    return report
+
+with gr.Blocks() as demo:
+    gr.Markdown("# Time Series Forecasting with LSTM and Gradio Interface")
+    
+    with gr.Tab("Upload Data"):
+        file_input = gr.File(label="Upload CSV File")
+        upload_btn = gr.Button("Upload")
+        upload_btn.click(upload_data, inputs=file_input, outputs="text")
+    
+    with gr.Tab("Set Parameters"):
+        time_step = gr.Number(label="Time Step", value=100)
+        scaler_type = gr.Dropdown(choices=["MinMaxScaler", "StandardScaler"], label="Scaler Type")
+        set_params_btn = gr.Button("Set Parameters")
+        set_params_btn.click(set_parameters, inputs=[time_step, scaler_type], outputs="text")
+    
+    with gr.Tab("Train Model"):
+        train_btn = gr.Button("Start Training")
+        train_btn.click(initiate_training, outputs="text")
+    
+    with gr.Tab("View Results"):
+        visualize_btn = gr.Button("Show Visualization")
+        visualize_output = gr.Plot()
+        visualize_btn.click(view_results, outputs=visualize_output)
+    
+    with gr.Tab("Generate Report"):
+        report_btn = gr.Button("Generate Report")
+        report_output = gr.File()
+        report_btn.click(generate_report_func, outputs=report_output)
+
+demo.launch()
