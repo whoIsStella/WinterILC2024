@@ -1,6 +1,6 @@
 import gradio as gr
 import pandas as pd
-from IIIII import load_data, preprocess_data, train_model, visualize_results, generate_report
+from tsf_projectKFOLD import load_data, preprocess_data, train_model, visualize_results, generate_report
 
 def upload_data(file):
     df = load_data(file)
